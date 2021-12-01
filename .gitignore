@@ -21,3 +21,6 @@ coverage
 TODO
 schema.yaml
 schema.json
+pnpm-lock.yaml
+package-lock.json
+

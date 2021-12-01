@@ -15,6 +15,7 @@ DB_USER="root"
 DB_PASSWORD=""
 DB_TIMEZONE="+00:00"
 
+
 ####################################################################################################
 ## Rate Limiting
 
@@ -38,8 +39,8 @@ STORAGE_LOCAL_ROOT="./uploads"
 ####################################################################################################
 ## Security
 
-KEY="8de513bf-ae18-474c-b53a-9d3e4c9b1ddd"
-SECRET="pNcevIX0brYoizOFJKqDUUvU8o0DoMWg"
+KEY="22d668e9-b1a0-421a-bec8-bff6214d65f5"
+SECRET="X4p1jIxt8Sx-tXXFeG4_TjlWZOKzIeg0"
 
 
 ACCESS_TOKEN_TTL="15m"
@@ -49,9 +50,9 @@ REFRESH_TOKEN_COOKIE_SAME_SITE="lax"
 REFRESH_TOKEN_COOKIE_NAME="directus_refresh_token"
 
 ####################################################################################################
-## Auth Providers
+## SSO (OAuth) Providers
 
-AUTH_PROVIDERS=""
+OAUTH_PROVIDERS=""
 
 ####################################################################################################
 ## Extensions

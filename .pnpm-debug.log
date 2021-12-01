@@ -1,0 +1,16 @@
+{
+  "0 debug pnpm:scope": {
+    "selected": 1
+  },
+  "1 error pnpm": {
+    "fileName": "C:\\works\\ragalaCms\\package.json",
+    "codeFrame": "\u001b[0m \u001b[90m 24 |\u001b[39m   }\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 25 |\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 26 |\u001b[39m }\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 27 |\u001b[39m\u001b[0m",
+    "code": "ERR_PNPM_JSON_PARSE",
+    "err": {
+      "name": "pnpm",
+      "message": "Unexpected token \"}\" (0x7D) in JSON at position 536 while parsing near \"...l\\\": \\\"^2.18.1\\\"\\n  },\\n\\n}\\n\" in C:\\works\\ragalaCms\\package.json \n\n\u001b[0m \u001b[90m 24 |\u001b[39m   }\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 25 |\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 26 |\u001b[39m }\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 27 |\u001b[39m\u001b[0m\n",
+      "code": "ERR_PNPM_JSON_PARSE",
+      "stack": "pnpm: Unexpected token \"}\" (0x7D) in JSON at position 536 while parsing near \"...l\\\": \\\"^2.18.1\\\"\\n  },\\n\\n}\\n\" in C:\\works\\ragalaCms\\package.json \n\n\u001b[0m \u001b[90m 24 |\u001b[39m   }\u001b[33m,\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 25 |\u001b[39m\u001b[0m\n\u001b[0m\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 26 |\u001b[39m }\u001b[0m\n\u001b[0m \u001b[90m    |\u001b[39m \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\u001b[0m\n\u001b[0m \u001b[90m 27 |\u001b[39m\u001b[0m\n\n    at parseJson (C:\\Users\\hunter\\AppData\\Roaming\\npm\\pnpm-global\\5\\node_modules\\.pnpm\\pnpm@6.23.2\\node_modules\\pnpm\\dist\\pnpm.cjs:3118:27)\n    at readJsonFile (C:\\Users\\hunter\\AppData\\Roaming\\npm\\pnpm-global\\5\\node_modules\\.pnpm\\pnpm@6.23.2\\node_modules\\pnpm\\dist\\pnpm.cjs:43000:42)\n    at async Object.tryReadProjectManifest (C:\\Users\\hunter\\AppData\\Roaming\\npm\\pnpm-global\\5\\node_modules\\.pnpm\\pnpm@6.23.2\\node_modules\\pnpm\\dist\\pnpm.cjs:43061:32)\n    at async tryReadProjectManifest (C:\\Users\\hunter\\AppData\\Roaming\\npm\\pnpm-global\\5\\node_modules\\.pnpm\\pnpm@6.23.2\\node_modules\\pnpm\\dist\\pnpm.cjs:43279:60)\n    at async handler (C:\\Users\\hunter\\AppData\\Roaming\\npm\\pnpm-global\\5\\node_modules\\.pnpm\\pnpm@6.23.2\\node_modules\\pnpm\\dist\\pnpm.cjs:117350:48)\n    at async C:\\Users\\hunter\\AppData\\Roaming\\npm\\pnpm-global\\5\\node_modules\\.pnpm\\pnpm@6.23.2\\node_modules\\pnpm\\dist\\pnpm.cjs:134189:20\n    at async run (C:\\Users\\hunter\\AppData\\Roaming\\npm\\pnpm-global\\5\\node_modules\\.pnpm\\pnpm@6.23.2\\node_modules\\pnpm\\dist\\pnpm.cjs:134163:34)\n    at async runPnpm (C:\\Users\\hunter\\AppData\\Roaming\\npm\\pnpm-global\\5\\node_modules\\.pnpm\\pnpm@6.23.2\\node_modules\\pnpm\\dist\\pnpm.cjs:134375:5)\n    at async C:\\Users\\hunter\\AppData\\Roaming\\npm\\pnpm-global\\5\\node_modules\\.pnpm\\pnpm@6.23.2\\node_modules\\pnpm\\dist\\pnpm.cjs:134367:7"
+    }
+  }
+}
