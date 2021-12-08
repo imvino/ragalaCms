@@ -24,3 +24,4 @@ schema.json
 pnpm-lock.yaml
 package-lock.json
 
+.pnpm-debug.log
