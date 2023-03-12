@@ -275,7 +275,7 @@ async function newUrl(db, payload, id) {
         if (payload?.highlight) {
             await highlight(db, getLoc(db), r1[0])
         }
-        if (db == 'articles_news') {
+        if (db == 'articles_news' && payload.film_personals) {
             if (payload.film_personals.length == 0) {
                 await nullify(`link_articles_news_starzone_filmpersonal`, 'articles_news_rid', db, 'filmPersonals')
             } else if (payload?.film_personals) {
