@@ -26,7 +26,9 @@
     "directus": "9.0.0-rc.101",
     "dotenv": "^16.0.3",
     "mysql": "^2.18.1",
+    "pica": "^9.0.1",
     "serverless-mysql": "^1.5.4",
+    "sharp": "^0.32.1",
     "url-slug": "^3.0.2",
     "vuedraggable": "^2.24.3"
   }

@@ -273,11 +273,13 @@
 					// Upload images
 					const uploads = this.thumbnails.map(async (thumbnail, index) => {
 						// Get the original file name without the extension
-						const fileNameWithoutExtension = thumbnail.file.name.replace(/\.[^/.]+$/, '');
+						const fileExtension = thumbnail.file.name.split('.').pop();
+						const fileNameWithoutExtension = thumbnail.file.name.replace(new RegExp(`\.${fileExtension}$`), '');
+
 
 						// Set the object keys for the original image and the thumbnail
-						const originalKey = `${params.Prefix}${fileNameWithoutExtension}.jpg`;
-						const thumbnailKey = `${params.Prefix}${fileNameWithoutExtension}t.jpg`;
+						const originalKey = `${params.Prefix}${fileNameWithoutExtension}.${fileExtension}`;
+						const thumbnailKey = `${params.Prefix}${fileNameWithoutExtension}t.${fileExtension}`;
 
 						// Convert the original file to an ArrayBuffer
 						const originalArrayBuffer = await new Promise((resolve, reject) => {
@@ -289,7 +291,7 @@
 
 						// Convert the thumbnail data URL to a Blob
 						const thumbnailBlob = await (async () => {
-							const response = await fetch(thumbnail.dataURL);
+							const response = await fetch(thumbnail.url);
 							return response.blob();
 						})();
 
