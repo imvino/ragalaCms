@@ -10,8 +10,8 @@
   },
   "directus:extension": {
     "type": "module",
-    "path": "extensions/modules/dash/index.js",
-    "source": "src/index.js",
+    "path": "extensions/modules/gallery/index.js",
+    "source": "extensions/modules/gallery/src/index.js",
     "host": "9.0.0-rc.101",
     "hidden": false
   },
@@ -19,11 +19,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.328.0",
     "@directus/extensions-sdk": "^9.1.2",
+    "@directus/shared": "^9.24.0",
     "axios": "^0.24.0",
     "directus": "9.0.0-rc.101",
+    "dotenv": "^16.0.3",
     "mysql": "^2.18.1",
     "serverless-mysql": "^1.5.4",
-    "url-slug": "^3.0.2"
+    "url-slug": "^3.0.2",
+    "vuedraggable": "^2.24.3"
   }
 }
