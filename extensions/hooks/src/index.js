@@ -138,7 +138,7 @@ async function newUrl(db, payload, id) {
         console.log(`SELECT * FROM ${db} where rid = ${id}`)
         r1 = await mysql.query(`SELECT * FROM ${db} where rid = ${id}`)
     }
-    if (db == 'local_events_events') {
+    if (db === 'local_events_events') {
         if (payload?.permaLink) {
             r1.map(async (v, i) => {
                 let url = `/events/local-events/${v.rid}/${urlSlug(v.permaLink)}`
@@ -157,7 +157,7 @@ async function newUrl(db, payload, id) {
             await linker(db, `link_local_events_events_starzone_filmpersonal`, `local_events_events_rid`, `starzone_filmpersonal_rid`, `filmPersonals`)
         }
     }
-    if (db == 'local_events_location') {
+    if (db === 'local_events_location') {
         console.log(payload?.locationName,'fdghfdgh');
         if (payload?.locationName) {
             r1.map(async (v, i) => {
@@ -166,20 +166,22 @@ async function newUrl(db, payload, id) {
             })
         }
     }
-    if (db == 'movies_function' || db == 'movies_photos' || db == 'movies_poster') {
+
+    if (db === 'movies_function' || db === 'movies_photos' || db === 'movies_poster') {
         let sub = {'movies_function': 'functions', 'movies_photos': 'photos', 'movies_poster': 'poster-designs'}
         if (payload?.permaLink || payload?.type) {
             r1.map((v, i) => {
                 let rid = v.rid
                 let gallery = v.permaLink ? urlSlug(v.permaLink) : urlSlug(v.title)
-                if (db == 'movies_photos') {
+                if (db === 'movies_photos') {
                     sub[db] = v.fileLocation.includes('/includes/working/') ? 'working-stills' : 'photos'
                 }
                 let url = `/movies/${sub[db]}/${rid}/${gallery}`
                 if (url != '') {
                     updateBitly(url, db, v.rid)
                 }
-                if ((payload?.fileLocation || payload?.path) && i == 0) {
+                console.log(payload?.fileLocation,payload?.path,i,url,'hookspay')
+                if ((payload?.fileLocation || payload?.path) && i === 0) {
                     wasabi(db, url)
                 }
             });
@@ -190,7 +192,7 @@ async function newUrl(db, payload, id) {
             await highlight(db, getLoc(db), r1[0])
         }
     }
-    if (db == 'starzone_filmpersonal') {
+    if (db === 'starzone_filmpersonal') {
         if (payload?.category_) {
             await linker(db, `link_starzone_filmpersonal_starzone_filmpersonal_category`, `starzone_filmpersonal_rid`, `starzone_filmpersonal_category_rid`, `category`, true)
         }
@@ -204,7 +206,7 @@ async function newUrl(db, payload, id) {
             await highlight(db, getLoc(db), r1[0])
         }
     }
-    if (db == 'starzone_photos') {
+    if (db === 'starzone_photos') {
         if (payload?.gender || payload?.permaLink) {
             r1.map(async (v, i) => {
                 let gallery = urlSlug(v.permaLink)
@@ -221,7 +223,7 @@ async function newUrl(db, payload, id) {
                 if (url != '') {
                     updateBitly(url, db, v.rid)
                 }
-                if (payload?.path && i == 0) {
+                if (payload?.path && i === 0) {
                     await wasabi(db, url)
                 }
             })
@@ -238,7 +240,7 @@ async function newUrl(db, payload, id) {
             await highlight(db, getLoc(db), r1[0])
         }
     }
-    if (db == 'movies_names_title') {
+    if (db === 'movies_names_title') {
         if (payload?.movieName || payload?.permaLink) {
             r1.map(async (v, i) => {
                 let gallery = v.permaLink ? urlSlug(v.permaLink) : `${urlSlug(v.movieName)}-telugucinema-cast-crew`
@@ -254,14 +256,14 @@ async function newUrl(db, payload, id) {
                 `movies_names_title_rid`, `starzone_filmpersonal_rid`, `filmPersonals`)
         }
         if (payload?.genre_) {
-            if (payload.genre_.length == 0) {
+            if (payload.genre_.length === 0) {
                 await nullify('link_movies_names_title_movie_genre', 'movies_names_title_rid', db, 'genre')
             } else {
                 await genreLink()
             }
         }
     }
-    if (db == 'movies_reviews' || db == 'articles_editorial' || db == 'articles_interviews' || db == 'articles_press_releases' || db == 'articles_news') {
+    if (db === 'movies_reviews' || db === 'articles_editorial' || db === 'articles_interviews' || db === 'articles_press_releases' || db === 'articles_news') {
         let sub = {
             'movies_reviews': `movie-reviews`, 'articles_editorial': `editorial`, 'articles_interviews': `interviews`,
             'articles_press_releases': 'press-releases', 'articles_news': 'news'
@@ -275,15 +277,15 @@ async function newUrl(db, payload, id) {
         if (payload?.highlight) {
             await highlight(db, getLoc(db), r1[0])
         }
-        if (db == 'articles_news' && payload.film_personals) {
-            if (payload.film_personals.length == 0) {
+        if (db === 'articles_news' && payload.film_personals) {
+            if (payload.film_personals.length === 0) {
                 await nullify(`link_articles_news_starzone_filmpersonal`, 'articles_news_rid', db, 'filmPersonals')
             } else if (payload?.film_personals) {
                 await linker(db, `link_articles_news_starzone_filmpersonal`, `articles_news_rid`, `starzone_filmpersonal_rid`, `filmPersonals`)
             }
         }
     }
-    if (db == 'highlights' && payload?.active) {
+    if (db === 'highlights' && payload?.active) {
         dbList.map(dl => {
             mysql.query(`UPDATE ${dl} set highlight='${payload.active}' WHERE ref='${id}'`)
 
@@ -301,7 +303,7 @@ module.exports = async function registerHook({filter, action}) {
     action('items.update', (out) => {
         console.log(out.payload.film_personals, 'film_personals')
         console.log(out, 'updater')
-        if (dbList.includes(out.collection) || out.collection == 'highlights') {
+        if (dbList.includes(out.collection) || out.collection === 'highlights') {
             newUrl(out.collection, out.payload, out.keys[0])
         }
     });
@@ -315,18 +317,18 @@ module.exports = async function registerHook({filter, action}) {
             'starzone_photos': '/starzone/actress/'
         }
         let db = out.collection
-        if (db == 'movies_poster' || db == 'movies_photos' || db == 'movies_function' || db == 'local_events_events' || db == 'starzone_photos') {
+        if (db === 'movies_poster' || db === 'movies_photos' || db === 'movies_function' || db === 'local_events_events' || db === 'starzone_photos') {
             out.payload.map(v => {
                 mysql.query(`DELETE FROM wasabi WHERE url like '${delUrl[db] + v}%'`)
-                if (db == 'movies_photos') {
+                if (db === 'movies_photos') {
                     mysql.query(`DELETE FROM wasabi WHERE url like '${'/movies/photos/' + v}%'`)
                 }
-                if (db == 'starzone_photos') {
+                if (db === 'starzone_photos') {
                     mysql.query(`DELETE FROM wasabi WHERE url like '${'/starzone/actor/' + v}%'`)
                 }
             })
         }
-        if (out.collection == 'highlights') {
+        if (out.collection === 'highlights') {
             out.payload.map(v => {
                 dbList.map(async dl => {
                     await mysql.query(`UPDATE ${dl} SET highlight='0', ref=null WHERE ref=${v}`)

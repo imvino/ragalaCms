@@ -1,4 +1,5 @@
-const AWS = require('aws-sdk');
+ const {S3Client,ListObjectsCommand }= require('@aws-sdk/client-s3')
+
 const mysql = require('serverless-mysql')({
     config: {
         host: process.env.DB_HOST,
@@ -10,19 +11,39 @@ const mysql = require('serverless-mysql')({
 })
 // Connection
 // This is how you can use the .aws credentials file to fetch the credentials
-const credentials = new AWS.SharedIniFileCredentials({profile: 'wasabi'});
-AWS.config.credentials = credentials;
+// const credentials = new AWS.SharedIniFileCredentials({profile: 'wasabi'});
+// AWS.config.credentials = credentials;
 // This is a configuration to directly use a profile from aws credentials file.
-AWS.config.credentials.accessKeyId = process.env.WASABIID
-AWS.config.credentials.secretAccessKey = process.env.WASABIKEY
+// AWS.config.credentials.accessKeyId = process.env.WASABIID
+// AWS.config.credentials.secretAccessKey = process.env.WASABIKEY
 // Set an endpoint.
-const ep = new AWS.Endpoint('s3.wasabisys.com');
+// const ep = new AWS.Endpoint('s3.wasabisys.com');
 // Create an S3 client
-const s3 = new AWS.S3({endpoint: ep});
+// const s3 = new AWS.S3({endpoint: ep});
+ //
+// const s3 = new S3({
+//     region: 'us-east-1', // replace with your desired region
+//     credentials: fromIni({
+//         profile: 'wasabi',
+//         accessKeyId: process.env.WASABIID,
+//         secretAccessKey: process.env.WASABIKEY,
+//     }),
+//     endpoint: 'https://s3.wasabisys.com',
+// });
+
+const s3 = new S3Client({
+    region: 'us-east-1',
+    credentials: {
+        accessKeyId: process.env.WASABIID,
+        secretAccessKey: process.env.WASABIKEY,
+    },
+    endpoint: 'https://s3.wasabisys.com',
+});
 
 let delCount = 15;
 let counter = 0;
 let mailCounter = 0;
+
 module.exports = async function wasabi(table,nurl) {
     let bucket = ['img.ragalahari.com', 'media.ragalahari.com', 'starzone.ragalahari.com', 'imgcdn.ragalahari.com',
         'www1.ragalahari.com', 'imgcdn.raagalahari.com', 'img.raagalahari.com', 'timg.raagalahari.com', 'szcdn.ragalahari.com', 'www.ragalahari.com','szcdn1.ragalahari.com']
@@ -58,7 +79,9 @@ module.exports = async function wasabi(table,nurl) {
                     Bucket: bucketName,
                     Prefix: prefix
                 };
-                s3.listObjects(params, function (err, data) {
+                const command = new ListObjectsCommand(params);
+                s3.send(command).then(data => {
+                // s3.listObjects(params, function (err, data) {
                     if (err) {
                         return 'There was an error viewing your album: ' + err.message
                     } else {
@@ -86,6 +109,7 @@ module.exports = async function wasabi(table,nurl) {
                                 }
                             })
                             Promise.all(wasabiId).then(async wasabi_id=>{
+                                console.log("wasabi => UPDATE `"+table+"` SET wasabi='[" + wasabi_id + "]' where rid=" + val.rid)
                                 let sql2 = await mysql.query("UPDATE `"+table+"` SET wasabi='[" + wasabi_id + "]' where rid=" + val.rid);
                                 // if (wasabi.length == 0) {
                                 //     console.log('not inserted ' + val.rid)
@@ -129,6 +153,7 @@ module.exports = async function wasabi(table,nurl) {
         }
         ids.splice(0, delCount).map((v, i) => {
             let permaLink =v.permaLink?v.permaLink:''
+            console.log({rid: v.rid, nurl: nurl, imageName: v.imageName,permaLink:permaLink})
             run({rid: v.rid, nurl: nurl, imageName: v.imageName,permaLink:permaLink});
         })
     }

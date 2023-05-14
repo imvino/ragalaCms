@@ -1,8 +1,9 @@
 <template>
 	<header>
 		<div class="header-bar">
-			<h2>Images from {{table}}</h2>
-			<button @click="goBack">&lt; Back</button>
+			<h2>Images from {{tableTitle}}</h2>
+			<a :href="`/admin/content/${loc}/${id}`">&lt; Back</a>
+<!--			<a @click="goBack" style="cursor: pointer">&lt; Back</a>-->
 		</div>
 	</header>
 	<private-view :title="title">
@@ -63,26 +64,26 @@
 	import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 	import CustomPagination from './CustomPagination.vue';
 
-
-	async function wasabi(rid,table) {
+	async function wasabi(rid,loc) {
 		let bucket = ['img.ragalahari.com', 'media.ragalahari.com', 'starzone.ragalahari.com', 'imgcdn.ragalahari.com',
 			'www1.ragalahari.com', 'imgcdn.raagalahari.com', 'img.raagalahari.com', 'timg.raagalahari.com', 'szcdn.ragalahari.com', 'www.ragalahari.com','szcdn1.ragalahari.com']
 		//'gallery.ragalahari.com',media1.ragalahari.com,74.52.160.190,media1.ragalahari.com,www.ragalahari.net,www.telugudvdshop.com
 //`wasabi` is null
 
-		const response = await axios.get(`/items/${table}?filter={"rid":${rid}}&fields=rid,permaLink,imageName`);
+		const response = await axios.get(`/items/${loc}?filter={"rid":${rid}}&fields=rid,permaLink,imageName`);
 		let v = response.data.data[0]
 		if(!v) return
 		return await run(v);
 
 		async function run(val) {
-			let selPath = table == 'movies_poster'?'fileLocation':'path'
-			const response2 = await axios.get(`/items/${table}?filter={"rid":${val.rid}}&fields=${selPath}`);
+			let selPath = loc === 'movies_poster'?'fileLocation':'path'
+			const response2 = await axios.get(`/items/${loc}?filter={"rid":${val.rid}}&fields=${selPath}`);
 			let obj = response2.data.data[0]
 			if (obj.hasOwnProperty('fileLocation')) {
 				obj['path'] = obj['fileLocation'];
-				delete obj['path'];
+				delete obj['fileLocation'];
 			}
+			console.log(obj)
 			if (obj?.path) {
 				let Origin = obj.path.replace(/http:\/\//gi, '').split('/')
 				let bucketName = Origin[0] == bucket[0] || Origin[0] == bucket[3] || Origin[0] == bucket[4] ||
@@ -103,7 +104,7 @@
 				if (bucketName != 'noFile') {
 					return  {
 						Bucket: bucketName,
-						Prefix: prefix
+						Prefix: prefix.slice(-1) === "/" ? prefix : prefix + "/"
 					};
 				} else {
 					return {}
@@ -120,14 +121,16 @@
 			return {
 				loading: true,
 				images: [],
-				table:'Loading',
-				title:'Loading',
+				tableTitle:'Loading tableTitle',
+				title:'Loading title',
 				wasabiIds: [],
 				currentPage: 1,
-				imagesPerPage: 5,
+				imagesPerPage: 10,
 				totalImages: 0,
 				draggedItem: null,
 				thumbnails: [],
+				id:this.$route.query.id,
+				loc:this.$route.query.loc
 			};
 		},
 		async created() {
@@ -142,36 +145,47 @@
 		},
 		methods: {
 			async fetchImages() {
-				const id = this.$route.query.id;
-				const loc = this.$route.query.loc;
-				if (id) {
+				if (this.id) {
 					try {
-						const response = await axios.get(`/items/${loc}?filter={"rid":${id}}&fields=wasabi,rid,title`);
+						const response = await axios.get(`/items/${this.loc}?filter={"rid":${this.id}}&fields=wasabi,rid,title,eventName`);
 						let res = response.data.data[0]
-						if(!res) return this.loading = false;
-						if (res.wasabi.length !== 0) {
-							const response2 = await axios.get(`http://localhost:8055/items/wasabi`, {
+						if (res.hasOwnProperty('eventName')) {
+							res['title'] = res['eventName'];
+							delete res['eventName'];
+						}
+						console.log(res,'res')
+						this.title = res.title
+						this.tableTitle = this.loc?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+
+						console.log(res.wasabi?.length, res.wasabi, 'what if')
+						if (res.wasabi?.length !== 0 && res.wasabi?.length !== undefined ) {
+							const response2 = await axios.get(`/items/wasabi`, {
 								params: {
 									filter: {
 										id: {
-											_in: res.wasabi,
+											_in: res.wasabi?.replace(/\[|\]/g, ""),
 										},
 									},
-									fields: 'image',
+									fields: 'id,image',
 									// limit: this.imagesPerPage,
 									// offset: (this.currentPage - 1) * this.imagesPerPage,
 								},
 							});
-							const wasabiIds =  JSON.parse(res.wasabi);
-							this.images = response2.data.data.map((imageObj, index) => ({
-								...imageObj,
-								id: wasabiIds[index],
-							}));
-							this.title = res.title
+							console.log(response2.data.data,'res2')
+							this.images = response2.data.data
+							// const wasabiIds =  JSON.parse(res.wasabi);
 
-							this.table = loc?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+							this.images.sort((a, b) => {
+								const indexA = res.wasabi.indexOf(a.id);
+								const indexB = res.wasabi.indexOf(b.id);
+								return indexA - indexB;
+							});
 
-							console.log(this.images,'gg')
+							// this.images = response2.data.data.map((imageObj, index) => ({
+							// 	...imageObj,
+							// 	id: wasabiIds[index],
+							// }));
+
 							this.totalImages = response2.data.data.length;
 
 							// this.images = response2.data.data;
@@ -209,6 +223,26 @@
 				console.log(`Moved item from index ${fromIndex} to index ${toIndex}`);
 				const updatedWasabiIds = this.images.map((image) => image.id);
 				console.log('Updated wasabiIds:', updatedWasabiIds);
+
+				const config = {
+					method: 'patch',
+					url: `/items/${this.loc}/${this.id}`,
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': 'Bearer HThT88wNbJ',
+					},
+					data: {
+						wasabi: JSON.stringify(updatedWasabiIds),
+					},
+				};
+				console.log(config,'config')
+				axios(config)
+						.then(function (response) {
+							console.log(JSON.stringify(response.data));
+						})
+						.catch(function (error) {
+							console.log(error);
+						});
 			},
 			goBack() {
 				// Navigate to the previous page or a specific route
@@ -251,24 +285,19 @@
 				if (this.thumbnails.length === 0) {
 					return;
 				}
-
 				try {
-					// Add your access keys
-					const accessKeyId = '1WSIWHRURHJVMWHLU1FE';
-					const secretAccessKey = 'WTpchaqGTymsFA5JG3zKhIJRrS5P0hHThT88wNbJ';
 
 					// Configure the S3 client
 					const s3 = new S3Client({
 						region: 'us-east-1',
 						credentials: {
-							accessKeyId,
-							secretAccessKey,
+							accessKeyId : '1WSIWHRURHJVMWHLU1FE',
+							secretAccessKey : 'WTpchaqGTymsFA5JG3zKhIJRrS5P0hHThT88wNbJ'
 						},
 						endpoint: 'https://s3.wasabisys.com',
 					});
-					const id = this.$route.query.id;
-					const loc = this.$route.query.loc;
-					let params = await wasabi(id,loc)
+
+					let params = await wasabi(this.id,this.loc)
 
 					// Upload images
 					const uploads = this.thumbnails.map(async (thumbnail, index) => {
@@ -317,6 +346,7 @@
 							Body: new Uint8Array(thumbnailArrayBuffer),
 							ContentType:thumbnail.file.type,
 						};
+						console.log(originalParams,'originalParams')
 
 						// Upload the original image and the thumbnail
 						const putObjectCommands = [
@@ -330,6 +360,7 @@
 					await Promise.all(uploads);
 					this.thumbnails = [];
 					alert('Images and thumbnails uploaded successfully!');
+
 				} catch (error) {
 					console.error('Error uploading images:', error);
 					alert('Failed to upload images. Please try again.');
@@ -362,10 +393,9 @@
 		align-items: center;
 	}
 
-	.image-title {
-		margin-top: 8px;
-		font-size: 14px;
-		font-weight: bold;
+	.image-item img {
+		width: 100%;
+		cursor: move;
 	}
 	/* Add the header bar styles */
 	.header-bar {

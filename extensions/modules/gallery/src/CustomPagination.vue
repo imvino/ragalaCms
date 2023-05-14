@@ -63,7 +63,7 @@
         display: flex;
         list-style: none;
         padding: 0;
-        margin-top: 1em;
+        margin: 1em 0;
     }
 
     .page-item {
