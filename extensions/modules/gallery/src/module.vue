@@ -5,10 +5,14 @@
 			<a :href="`/admin/content/${loc}/${id}`">&lt; Back</a>
 <!--			<a @click="goBack" style="cursor: pointer">&lt; Back</a>-->
 		</div>
+    <div class="progress-bar" style="width: 100%; height:5px; background: #ff0000;">
+      <div :style="{width: progress + '%', height:'5px' ,background: '#00c897'}"></div>
+    </div>
 	</header>
 	<private-view :title="title">
 		<div class="gallery">
 			<input
+          id='file-input'
 					type="file"
 					ref="imageUpload"
 					multiple
@@ -20,9 +24,12 @@
 				<button class="select-images-btn" @click="$refs.imageUpload.click()">Select Images</button>
 				<button class="upload-images-btn" @click="uploadImages" :disabled="thumbnails.length === 0">Upload Images</button>
 			</div>
+      <div class="notification" :class="notificationType" v-if="showNotification">
+        {{ notificationMessage }}
+      </div>
 			<div class="uploaded-thumbnails">
 				<div
-						v-for="(thumbnail, index) in thumbnails"
+						v-for="(thumbnail, index) in sortedThumbnails"
 						:key="index"
 						class="thumbnail-container"
 						@click="removeImage(index)"
@@ -119,6 +126,10 @@
 		},
 		data() {
 			return {
+        progress:100,
+        showNotification: false,
+        notificationMessage: '',
+        notificationType: '',
 				loading: true,
 				images: [],
 				tableTitle:'Loading tableTitle',
@@ -142,6 +153,15 @@
 				const endIndex = startIndex + this.imagesPerPage;
 				return this.images.slice(startIndex, endIndex);
 			},
+      sortedThumbnails() {
+        return this.thumbnails.slice().sort((a, b) => {
+          const nameA = a.file.name.toLowerCase();
+          const nameB = b.file.name.toLowerCase();
+          if (nameA < nameB) return -1;
+          if (nameA > nameB) return 1;
+          return 0;
+        });
+      },
 		},
 		methods: {
 			async fetchImages() {
@@ -286,7 +306,7 @@
 					return;
 				}
 				try {
-
+            this.progress =0
 					// Configure the S3 client
 					const s3 = new S3Client({
 						region: 'us-east-1',
@@ -304,7 +324,6 @@
 						// Get the original file name without the extension
 						const fileExtension = thumbnail.file.name.split('.').pop();
 						const fileNameWithoutExtension = thumbnail.file.name.replace(new RegExp(`\.${fileExtension}$`), '');
-
 
 						// Set the object keys for the original image and the thumbnail
 						const originalKey = `${params.Prefix}${fileNameWithoutExtension}.${fileExtension}`;
@@ -347,6 +366,7 @@
 							ContentType:thumbnail.file.type,
 						};
 						console.log(originalParams,'originalParams')
+            let total = this.thumbnails.length
 
 						// Upload the original image and the thumbnail
 						const putObjectCommands = [
@@ -354,18 +374,47 @@
 							new PutObjectCommand(thumbnailParams),
 						];
 
-						await Promise.all(putObjectCommands.map((command) => s3.send(command)));
+            for (const command of putObjectCommands) {
+              await s3.send(command);
+              // /movies/functions/123933/csi-sanatan-pre-release-press-meet/image1
+              // /movies/functions/123933/csi-sanatan-pre-release-press-meet
+              // http://imgcdn.ragalahari.com/mar2023/functions/csi-sanatan-pre-release-meet/csi-sanatan-pre-release-meet1t.jpg
+              this.progress=((index+1)/total)*100
+            }
+
+						// await Promise.all(putObjectCommands.map((command) => s3.send(command)));
 					});
 
-					await Promise.all(uploads);
-					this.thumbnails = [];
-					alert('Images and thumbnails uploaded successfully!');
+					 await Promise.all(uploads);
+          // Reset file input element
+          const fileInput = document.getElementById('file-input');
+          fileInput.value = '';
+
+          this.thumbnails = [];
+          this.showNotificationMsg('success','Images and thumbnails uploaded successfully!')
+
 
 				} catch (error) {
 					console.error('Error uploading images:', error);
-					alert('Failed to upload images. Please try again.');
+          this.showNotificationMsg('danger','Failed to upload images. Please try again.',)
+
 				}
 			},
+      showNotificationMsg(type, message) {
+        this.showNotification = true;
+        this.notificationMessage = message;
+        this.notificationType = type;
+
+        setTimeout(() => {
+          this.hideNotification();
+        }, 3000);
+      },
+
+      hideNotification() {
+        this.showNotification = false;
+        this.notificationMessage = '';
+        this.notificationType = '';
+      },
 			removeImage(index) {
 				this.thumbnails.splice(index, 1);
 			},
@@ -487,4 +536,22 @@
 	.thumbnail-container:hover .thumbnail-remove {
 		display: block;
 	}
+
+  .notification {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    padding: 10px;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+
+  .success {
+    background-color: #3788d8;
+    color: #fff;
+  }
+  .danger {
+    background-color: #d83737;
+    color: #fff;
+  }
 </style>
