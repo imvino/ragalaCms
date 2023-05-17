@@ -43,7 +43,7 @@ const s3 = new S3Client({
 let delCount = 15;
 let counter = 0;
 let mailCounter = 0;
-
+// it will check the images in the given path from wasabi and add it to msql
 module.exports = async function wasabi(table,nurl) {
     let bucket = ['img.ragalahari.com', 'media.ragalahari.com', 'starzone.ragalahari.com', 'imgcdn.ragalahari.com',
         'www1.ragalahari.com', 'imgcdn.raagalahari.com', 'img.raagalahari.com', 'timg.raagalahari.com', 'szcdn.ragalahari.com', 'www.ragalahari.com','szcdn1.ragalahari.com']
@@ -53,10 +53,8 @@ module.exports = async function wasabi(table,nurl) {
 
     let ids = await mysql.query("SELECT `rid`,"+_webUrl+",`imageName` FROM `"+table+"` where `wasabi` is null order by rid desc")
     async function run(val) {
-        console.log(val)
         let selPath = table == 'movies_poster'?'`fileLocation` as path':'path'
         let sql = await mysql.query("SELECT "+selPath+" FROM `"+table+"` where `wasabi` is null and `rid`=" + val.rid)
-        console.log('started', val.rid)
         if (sql[0]?.path) {
             let Orgin = sql[0].path.replace(/http:\/\//gi, '').split('/')
             let bucketName = Orgin[0] == bucket[0] || Orgin[0] == bucket[3] || Orgin[0] == bucket[4] ||
@@ -73,7 +71,6 @@ module.exports = async function wasabi(table,nurl) {
                     prefix = prefix.replace(v, '')
                 })
             }
-            console.log( bucketName, prefix)
             if (bucketName != 'noFile') {
                 var params = {
                     Bucket: bucketName,
@@ -82,9 +79,9 @@ module.exports = async function wasabi(table,nurl) {
                 const command = new ListObjectsCommand(params);
                 s3.send(command).then(data => {
                 // s3.listObjects(params, function (err, data) {
-                    if (err) {
-                        return 'There was an error viewing your album: ' + err.message
-                    } else {
+                //     if (err) {
+                //         return 'There was an error viewing your album: ' + err.message
+                //     } else {
                         let wasabi = []
                         let prefixUrl=(prefix +'/'+val.imageName)?.replace('//','/')
                         let promises = data.Contents.map(async (obj, index) => {
@@ -98,7 +95,7 @@ module.exports = async function wasabi(table,nurl) {
                         })
                         Promise.all(promises).then(async function (results) {
                             wasabi=wasabi.sort(function(a,b){return a.imgNo - b.imgNo})
-                           let wasabiId= await wasabi.map(async (v,i)=> {
+                           let wasabiId=  wasabi.map(async (v,i)=> {
                                 let sql = await mysql.query("SELECT count(*) FROM `wasabi` where `url`='" + v.url + "'")
                                 if (sql[0]['count(*)'] == 0) {
                                     let sql2 = await mysql.query("INSERT INTO `wasabi`(`url`,  `image`) VALUES ('" + v.url + "','" + v.image + "')");
@@ -109,7 +106,6 @@ module.exports = async function wasabi(table,nurl) {
                                 }
                             })
                             Promise.all(wasabiId).then(async wasabi_id=>{
-                                console.log("wasabi => UPDATE `"+table+"` SET wasabi='[" + wasabi_id + "]' where rid=" + val.rid)
                                 let sql2 = await mysql.query("UPDATE `"+table+"` SET wasabi='[" + wasabi_id + "]' where rid=" + val.rid);
                                 // if (wasabi.length == 0) {
                                 //     console.log('not inserted ' + val.rid)
@@ -129,8 +125,11 @@ module.exports = async function wasabi(table,nurl) {
                             });
                            // return
                         })
-                    }
-                })
+                    // }
+                }).catch(err => {
+                    // Handle error here
+                    return 'There was an error viewing your album: ' + err.message
+                });
             } else {
                 let sql2 = await mysql.query("UPDATE `"+table+"` SET wasabi='[]' where rid=" + val.rid);
                 console.log('noFile')
@@ -153,7 +152,6 @@ module.exports = async function wasabi(table,nurl) {
         }
         ids.splice(0, delCount).map((v, i) => {
             let permaLink =v.permaLink?v.permaLink:''
-            console.log({rid: v.rid, nurl: nurl, imageName: v.imageName,permaLink:permaLink})
             run({rid: v.rid, nurl: nurl, imageName: v.imageName,permaLink:permaLink});
         })
     }

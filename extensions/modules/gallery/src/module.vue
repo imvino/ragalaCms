@@ -71,55 +71,6 @@
 	import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 	import CustomPagination from './CustomPagination.vue';
 
-	async function wasabi(rid,loc) {
-		let bucket = ['img.ragalahari.com', 'media.ragalahari.com', 'starzone.ragalahari.com', 'imgcdn.ragalahari.com',
-			'www1.ragalahari.com', 'imgcdn.raagalahari.com', 'img.raagalahari.com', 'timg.raagalahari.com', 'szcdn.ragalahari.com', 'www.ragalahari.com','szcdn1.ragalahari.com']
-		//'gallery.ragalahari.com',media1.ragalahari.com,74.52.160.190,media1.ragalahari.com,www.ragalahari.net,www.telugudvdshop.com
-//`wasabi` is null
-
-		const response = await axios.get(`/items/${loc}?filter={"rid":${rid}}&fields=rid,permaLink,imageName`);
-		let v = response.data.data[0]
-		if(!v) return
-		return await run(v);
-
-		async function run(val) {
-			let selPath = loc === 'movies_poster'?'fileLocation':'path'
-			const response2 = await axios.get(`/items/${loc}?filter={"rid":${val.rid}}&fields=${selPath}`);
-			let obj = response2.data.data[0]
-			if (obj.hasOwnProperty('fileLocation')) {
-				obj['path'] = obj['fileLocation'];
-				delete obj['fileLocation'];
-			}
-			console.log(obj)
-			if (obj?.path) {
-				let Origin = obj.path.replace(/http:\/\//gi, '').split('/')
-				let bucketName = Origin[0] == bucket[0] || Origin[0] == bucket[3] || Origin[0] == bucket[4] ||
-				Origin[0] == bucket[5] || Origin[0] == bucket[6] || Origin[0] == bucket[7] ? bucket[0] : Origin[0] == bucket[1] || Origin[0] == bucket[9] ? bucket[1] :
-						Origin[0] == bucket[2] || Origin[0] == bucket[8] || Origin[0] == bucket[10] ? bucket[2] : 'noFile';
-
-				let remove = bucket.concat('http:///').concat('Http:///')
-				let prefix = obj.path
-
-				if (prefix == 'http://www.ragalahari.com/images/') {
-					prefix = 'gallery/' + val.imageName + '/'
-				} else {
-					remove.map(v => {
-						prefix = prefix.replace(v, '')
-					})
-				}
-				console.log( bucketName, prefix)
-				if (bucketName != 'noFile') {
-					return  {
-						Bucket: bucketName,
-						Prefix: prefix.slice(-1) === "/" ? prefix : prefix + "/"
-					};
-				} else {
-					return {}
-				}
-			}
-		}
-
-	}
 	export default  {
 		components: {
 			CustomPagination,
@@ -134,12 +85,16 @@
 				images: [],
 				tableTitle:'Loading tableTitle',
 				title:'Loading title',
+        nurl:'',
+        imageName:'',
+        imagePath:'',
 				wasabiIds: [],
 				currentPage: 1,
 				imagesPerPage: 10,
 				totalImages: 0,
 				draggedItem: null,
 				thumbnails: [],
+        bearer:'HThT88wNbJ',
 				id:this.$route.query.id,
 				loc:this.$route.query.loc
 			};
@@ -164,10 +119,58 @@
       },
 		},
 		methods: {
+      async wasabi(rid,loc) {
+        let bucket = ['img.ragalahari.com', 'media.ragalahari.com', 'starzone.ragalahari.com', 'imgcdn.ragalahari.com',
+          'www1.ragalahari.com', 'imgcdn.raagalahari.com', 'img.raagalahari.com', 'timg.raagalahari.com', 'szcdn.ragalahari.com', 'www.ragalahari.com','szcdn1.ragalahari.com']
+        //'gallery.ragalahari.com',media1.ragalahari.com,74.52.160.190,media1.ragalahari.com,www.ragalahari.net,www.telugudvdshop.com
+//`wasabi` is null
+
+        const response = await axios.get(`/items/${loc}?filter={"rid":${rid}}&fields=rid,permaLink,imageName`);
+        let v = response.data.data[0]
+        if(!v) return
+        return await run(v);
+
+        async function run(val) {
+          let selPath = loc === 'movies_poster'?'fileLocation':'path'
+          const response2 = await axios.get(`/items/${loc}?filter={"rid":${val.rid}}&fields=${selPath}`);
+          let obj = response2.data.data[0]
+          if (obj.hasOwnProperty('fileLocation')) {
+            obj['path'] = obj['fileLocation'];
+            delete obj['fileLocation'];
+          }
+          this.imagePath = obj['path']
+          if (obj?.path) {
+            let Origin = obj.path.replace(/http:\/\//gi, '').split('/')
+            let bucketName = Origin[0] == bucket[0] || Origin[0] == bucket[3] || Origin[0] == bucket[4] ||
+            Origin[0] == bucket[5] || Origin[0] == bucket[6] || Origin[0] == bucket[7] ? bucket[0] : Origin[0] == bucket[1] || Origin[0] == bucket[9] ? bucket[1] :
+                Origin[0] == bucket[2] || Origin[0] == bucket[8] || Origin[0] == bucket[10] ? bucket[2] : 'noFile';
+
+            let remove = bucket.concat('http:///').concat('Http:///')
+            let prefix = obj.path
+
+            if (prefix == 'http://www.ragalahari.com/images/') {
+              prefix = 'gallery/' + val.imageName + '/'
+            } else {
+              remove.map(v => {
+                prefix = prefix.replace(v, '')
+              })
+            }
+            console.log( bucketName, prefix)
+            if (bucketName != 'noFile') {
+              return  {
+                Bucket: bucketName,
+                Prefix: prefix.slice(-1) === "/" ? prefix : prefix + "/"
+              };
+            } else {
+              return {}
+            }
+          }
+        }
+      },
 			async fetchImages() {
 				if (this.id) {
 					try {
-						const response = await axios.get(`/items/${this.loc}?filter={"rid":${this.id}}&fields=wasabi,rid,title,eventName`);
+						const response = await axios.get(`/items/${this.loc}?filter={"rid":${this.id}}&fields=wasabi,rid,title,eventName,nurl,imageName`);
 						let res = response.data.data[0]
 						if (res.hasOwnProperty('eventName')) {
 							res['title'] = res['eventName'];
@@ -175,6 +178,8 @@
 						}
 						console.log(res,'res')
 						this.title = res.title
+						this.nurl = res.nurl
+						this.imageName = res.imageName
 						this.tableTitle = this.loc?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
 						console.log(res.wasabi?.length, res.wasabi, 'what if')
@@ -249,7 +254,7 @@
 					url: `/items/${this.loc}/${this.id}`,
 					headers: {
 						'Content-Type': 'application/json',
-						'Authorization': 'Bearer HThT88wNbJ',
+						'Authorization': 'Bearer '+this.bearer,
 					},
 					data: {
 						wasabi: JSON.stringify(updatedWasabiIds),
@@ -374,11 +379,51 @@
 							new PutObjectCommand(thumbnailParams),
 						];
 
+
+            let wasabiIds = []
+
+
             for (const command of putObjectCommands) {
               await s3.send(command);
+
+              let imgNo = parseInt(thumbnail.file.name.match(/\d+/g).pop());
               // /movies/functions/123933/csi-sanatan-pre-release-press-meet/image1
-              // /movies/functions/123933/csi-sanatan-pre-release-press-meet
-              // http://imgcdn.ragalahari.com/mar2023/functions/csi-sanatan-pre-release-meet/csi-sanatan-pre-release-meet1t.jpg
+              let url= this.nurl+`/image${imgNo}`;
+              // http://imgcdn.ragalahari.com/mar2023/functions/csi-sanatan-pre-release-meet/csi-sanatan-pre-release-meet1.jpg
+              let image = 'http://' + params.Bucket + '/' + this.imagePath + '/' + thumbnail.file.name
+
+
+              const response = await axios.get(`/items/wasabi?filter={"url":url}`);
+              let res = response.data.data[0]
+              if(res.length === 0){
+                // insert
+                axios({
+                  method: 'post',
+                  url: '/items/wasabi',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer '+this.bearer,
+                  },
+                  data: {
+                    url: JSON.stringify(url),
+                    image: JSON.stringify(image),
+                  }
+                })
+                    .then(response => {
+                      console.log(response.data,'resp from insert');
+                    })
+                    .catch(error => {
+                      console.error(error);
+                    });
+
+              }else{
+                //fetch
+                wasabiIds.push(res.id)
+
+              }
+
+
+
               this.progress=((index+1)/total)*100
             }
 

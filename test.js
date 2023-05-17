@@ -19,7 +19,33 @@ async function f() {
     console.log(obj)
 
 }
-f()
+function fd(){
 
 
 
+
+    axios({
+        method: 'post',
+        url: 'http://localhost:8055/items/wasabi',
+        headers: {
+            'Authorization': 'Bearer HThT88wNbJ'
+        },
+        data: {
+            "url": 5342,
+            "image": 231232
+        }
+    })
+        .then(response => {
+            console.log(response.data);
+        })
+        .catch(error => {
+            console.error(error);
+        });
+
+
+
+}
+
+
+
+fd()
