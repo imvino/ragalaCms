@@ -35,7 +35,6 @@ let loc = {
 
 function getLoc(db) {
     let g = Object.keys(loc).map((v, i) => {
-        console.log(loc[v].includes(db))
         return loc[v].includes(db) ? v : null
     })
     let g1 = g.filter(v => v != null)
@@ -63,20 +62,18 @@ async function bitly(url) {
         data: JSON.stringify({"long_url": "https://www.ragalahari.com" + url, "domain": "rglhri.in"})
     };
 
-    let data = await axios(config)
+    return await axios(config)
         .then(function (response) {
             return response.data.link
         })
         .catch(function (error) {
             console.log(error);
         });
-    return data
 }
 
 async function updateBitly(url, db, rid) {
     let bit = await bitly(url)
     if (bit) {
-        console.log(`UPDATE ${db} SET nurl = '${url}',bitly = '${bit}' where rid='${rid}'`)
         await mysql.query(`UPDATE ${db} SET nurl = '${url}',bitly = '${bit}' where rid='${rid}'`)
     }
 }
@@ -117,7 +114,6 @@ async function highlight(db, loc, v) {
                         v.fileLocation ? `'${v.fileLocation + '/' + v.imageName + '1t.jpg'}'` : null
 
             let url = v.nurl ? `'${v.nurl}'` : null
-            console.log(loc, 'thisloc')
             loc = loc.match(/[a-z-]+/)
             loc = loc ? `'["${loc[0]}"]'` : `["all"]`
             let r = await mysql.query(`INSERT INTO highlights(title, image_url, url, active, ref, display_location) VALUES (${title},${image},${url},'1',${refId},${loc})`)
@@ -126,16 +122,13 @@ async function highlight(db, loc, v) {
             }
         }
     } else {
-        console.log(`UPDATE highlights SET active=${v.highlight} WHERE ref=${refId}`)
-        let r = await mysql.query(`UPDATE highlights SET active=${v.highlight} WHERE ref=${refId}`)
+        await mysql.query(`UPDATE highlights SET active=${v.highlight} WHERE ref=${refId}`)
     }
 }
 
 async function newUrl(db, payload, id) {
-    console.log(db, payload, id,'newor')
     let r1 = []
     if (dbList.includes(db)) {
-        console.log(`SELECT * FROM ${db} where rid = ${id}`)
         r1 = await mysql.query(`SELECT * FROM ${db} where rid = ${id}`)
     }
     if (db === 'local_events_events') {
@@ -158,7 +151,6 @@ async function newUrl(db, payload, id) {
         }
     }
     if (db === 'local_events_location') {
-        console.log(payload?.locationName,'fdghfdgh');
         if (payload?.locationName) {
             r1.map(async (v, i) => {
                 let url = `/events/info/${v.rid}/${urlSlug(v.locationName)}`
@@ -180,7 +172,6 @@ async function newUrl(db, payload, id) {
                 if (url != '') {
                     updateBitly(url, db, v.rid)
                 }
-                console.log(payload?.fileLocation,payload?.path,i,url,'hookspay')
                 if ((payload?.fileLocation || payload?.path) && i === 0) {
                     wasabi(db, url)
                 }
@@ -295,20 +286,16 @@ async function newUrl(db, payload, id) {
 
 module.exports = async function registerHook({filter, action}) {
     action('items.create', (out) => {
-        console.log(out, 'funfact')
         if (dbList.includes(out.collection)) {
             newUrl(out.collection, out.payload, out.key)
         }
     });
     action('items.update', (out) => {
-        console.log(out.payload.film_personals, 'film_personals')
-        console.log(out, 'updater')
         if (dbList.includes(out.collection) || out.collection === 'highlights') {
             newUrl(out.collection, out.payload, out.keys[0])
         }
     });
     action('items.delete', (out) => {
-        console.log(out, 'kannama')
         let delUrl = {
             'movies_poster': '/movies/poster-designs/',
             'movies_photos': '/movies/working-stills/',

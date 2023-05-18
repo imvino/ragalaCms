@@ -114,13 +114,13 @@ module.exports = async function wasabi(table,nurl) {
                                 // }
                                 counter++
                                 if (counter % delCount === 0) {
-                                    console.log('new array')
+                                    // console.log('new array')
                                     arr()
                                 } else if (ids.length === 0) {
-                                    console.log('zero array')
+                                    // console.log('zero array')
                                     arr()
                                 } else {
-                                    console.log(ids.length, counter, delCount)
+                                    // console.log(ids.length, counter, delCount)
                                 }
                             });
                            // return
@@ -132,12 +132,12 @@ module.exports = async function wasabi(table,nurl) {
                 });
             } else {
                 let sql2 = await mysql.query("UPDATE `"+table+"` SET wasabi='[]' where rid=" + val.rid);
-                console.log('noFile')
+                // console.log('noFile')
                 arr()
             }
         } else {
             let sql2 = await mysql.query("UPDATE `"+table+"` SET wasabi='[]' where rid=" + val.rid);
-            console.log('noPath')
+            // console.log('noPath')
             arr()
         }
     }
@@ -145,9 +145,9 @@ module.exports = async function wasabi(table,nurl) {
         if (ids.length === 0) {
             mailCounter++
             if (mailCounter === 1) {
-                console.log('completed')
+                // console.log('completed')
             }
-            console.log(mailCounter)
+            // console.log(mailCounter)
             return
         }
         ids.splice(0, delCount).map((v, i) => {

@@ -104,12 +104,11 @@
             prefix = prefix.replace(v, '')
           })
         }
-        console.log( bucketName, prefix)
         if (bucketName != 'noFile') {
           return  {
             Bucket: bucketName,
             Prefix: prefix.slice(-1) === "/" ? prefix : prefix + "/",
-            imagePath:obj['path']
+            imagePath:obj['path'].endsWith('/') ? obj['path'] : obj['path'] + '/'
           };
         } else {
           return {}
@@ -173,13 +172,10 @@
 							res['title'] = res['eventName'];
 							delete res['eventName'];
 						}
-						console.log(res,'res')
 						this.title = res.title
 						this.nurl = res.nurl
 						this.imageName = res.imageName
 						this.tableTitle = this.loc?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-
-						console.log(res.wasabi?.length, res.wasabi, 'what if')
 						if (res.wasabi?.length !== 0 && res.wasabi?.length !== undefined ) {
 							const response2 = await axios.get(`/items/wasabi`, {
 								params: {
@@ -189,14 +185,12 @@
 										},
 									},
 									fields: 'id,image',
-									// limit: this.imagesPerPage,
+                  limit: 1000,
 									// offset: (this.currentPage - 1) * this.imagesPerPage,
 								},
 							});
-							console.log(response2.data.data,'res2')
 							this.images = response2.data.data
 							// const wasabiIds =  JSON.parse(res.wasabi);
-
 							this.images.sort((a, b) => {
 								const indexA = res.wasabi.indexOf(a.id);
 								const indexB = res.wasabi.indexOf(b.id);
@@ -225,7 +219,6 @@
 				this.currentPage = page;
 			},
       async updateWasabiOrder(updatedWasabiIds) {
-        console.log(updatedWasabiIds, 'updatedWasabiIds');
         const config = {
           method: 'patch',
           url: `/items/${this.loc}/${this.id}`,
@@ -237,10 +230,9 @@
             wasabi: JSON.stringify(updatedWasabiIds),
           },
         };
-        console.log(config, 'config')
         await axios(config)
             .then(function (response) {
-              console.log(JSON.stringify(response.data));
+
             })
             .catch(function (error) {
               console.log(error);
@@ -264,9 +256,8 @@
 			},
 			onDragEnd({ fromIndex, toIndex }) {
 				// Handle logic after dragging ends, e.g., update the order in the database
-				console.log(`Moved item from index ${fromIndex} to index ${toIndex}`);
+				// console.log(`Moved item from index ${fromIndex} to index ${toIndex}`);
 				const updatedWasabiIds = this.images.map((image) => image.id);
-				console.log('Updated wasabiIds:', updatedWasabiIds);
         this.updateWasabiOrder(updatedWasabiIds)
 
 			},
@@ -323,7 +314,6 @@
 						endpoint: 'https://s3.wasabisys.com',
 					});
 					let params = await wasabi(this.id,this.loc)
-          console.log(params,'params');
           this.progress =0
           let wasabiIds = []
 
@@ -373,7 +363,7 @@
 							Body: new Uint8Array(thumbnailArrayBuffer),
 							ContentType:thumbnail.file.type,
 						};
-						console.log(originalParams,'originalParams')
+
             let total = this.thumbnails.length
 
 						// Upload the original image and the thumbnail
@@ -393,13 +383,10 @@
             // http://imgcdn.ragalahari.com/mar2023/functions/csi-sanatan-pre-release-meet/csi-sanatan-pre-release-meet1.jpg
             let image =  params.imagePath + thumbnail.file.name
 
-
             const response = await axios.get(`/items/wasabi?filter={"url":"${url}"}`);
             let res = response.data.data
-            console.log(res);
-            if(res.length === 0){
 
-              console.log('inserted',url,image);
+            if(res.length === 0){
               // insert
               await axios({
                 method: 'post',
@@ -417,26 +404,22 @@
                     let lastId = await axios.get(`/items/wasabi?limit=1&sort=-id`);
                     lastId = lastId.data.data[0].id
                     wasabiIds.push(lastId)
-                    console.log(response.data, lastId, 'resp from insert');
                   })
                   .catch(error => {
                     console.error(error);
                   });
 
             }else{
-              console.log('fetched');
               //fetch
               wasabiIds.push(res[0].id)
             }
 						// await Promise.all(putObjectCommands.map((command) => s3.send(command)));
-            console.log(index,total,index+1);
             this.progress=((index+1)/total)*100
 					});
           await Promise.all(uploads);
           // wasabiIds = [...new Set(wasabiIds)];
           wasabiIds = wasabiIds.filter((id, index) => wasabiIds.indexOf(id) === index);
 
-          console.log(wasabiIds);
           const response = await axios.get(`/items/${this.loc}?filter={"rid":${this.id}}&fields=wasabi`);
           let obj = JSON.parse(response.data.data[0].wasabi)
 
@@ -451,9 +434,11 @@
           fileInput.value = '';
           this.thumbnails = [];
           this.progress=100
+          //refetch image
+          this.fetchImages();
+
 				} catch (error) {
 					console.error('Error uploading images:', error);
-          //refetch image
           this.showNotificationMsg('danger-btn','Failed to upload images. Please try again.',)
 
 				}
@@ -462,11 +447,12 @@
         this.showNotification = true;
         this.notificationMessage = message;
         this.notificationType = type;
-        setTimeout(() => {
-          this.hideNotification();
-        }, 3000);
+        if( type !== 'primary-btn') {
+          setTimeout(() => {
+            this.hideNotification();
+          }, 3000);
+        }
       },
-
       hideNotification() {
         this.showNotification = false;
         this.notificationMessage = '';
@@ -500,8 +486,11 @@
 	}
 
 	.image-item img {
-		width: 100%;
-		cursor: move;
+    width: 100%;
+    cursor: move;
+    max-width: 250px;
+    max-height: 300px;
+    object-fit: contain;
 	}
 	/* Add the header bar styles */
 	.header-bar {

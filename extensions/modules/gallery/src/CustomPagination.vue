@@ -32,11 +32,7 @@
         },
         computed: {
             totalPages() {
-                console.log("total:", this.total);
-                console.log("limit:", this.limit);
-                const totalPages = Math.ceil(this.total / this.limit);
-                console.log("totalPages:", totalPages);
-                return totalPages;
+              return Math.ceil(this.total / this.limit);
             },
             currentPage: {
                 get() {
