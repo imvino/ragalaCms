@@ -5,7 +5,7 @@
 			<a :href="`/admin/content/${loc}/${id}`">&lt; Back</a>
 <!--			<a @click="goBack" style="cursor: pointer">&lt; Back</a>-->
 		</div>
-    <div class="progress-bar" style="width: 100%; height:5px; background: #ff0000;">
+    <div class="progress-bar" style="width: 100%; height:5px; background: #18222f;">
       <div :style="{width: progress + '%', height:'5px' ,background: '#00c897'}"></div>
     </div>
 	</header>
@@ -135,7 +135,7 @@
         imageName:'',
 				wasabiIds: [],
 				currentPage: 1,
-				imagesPerPage: 10,
+				imagesPerPage: 50,
 				totalImages: 0,
 				draggedItem: null,
 				thumbnails: [],
@@ -224,6 +224,28 @@
 			handlePagination(page) {
 				this.currentPage = page;
 			},
+      async updateWasabiOrder(updatedWasabiIds) {
+        console.log(updatedWasabiIds, 'updatedWasabiIds');
+        const config = {
+          method: 'patch',
+          url: `/items/${this.loc}/${this.id}`,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + this.bearer,
+          },
+          data: {
+            wasabi: JSON.stringify(updatedWasabiIds),
+          },
+        };
+        console.log(config, 'config')
+        await axios(config)
+            .then(function (response) {
+              console.log(JSON.stringify(response.data));
+            })
+            .catch(function (error) {
+              console.log(error);
+            });
+      },
 			onDragStart(e) {
 				this.draggedItem = e.target.closest('.image-item');
 				e.dataTransfer.effectAllowed = 'move';
@@ -245,26 +267,8 @@
 				console.log(`Moved item from index ${fromIndex} to index ${toIndex}`);
 				const updatedWasabiIds = this.images.map((image) => image.id);
 				console.log('Updated wasabiIds:', updatedWasabiIds);
+        this.updateWasabiOrder(updatedWasabiIds)
 
-				const config = {
-					method: 'patch',
-					url: `/items/${this.loc}/${this.id}`,
-					headers: {
-						'Content-Type': 'application/json',
-						'Authorization': 'Bearer '+this.bearer,
-					},
-					data: {
-						wasabi: JSON.stringify(updatedWasabiIds),
-					},
-				};
-				console.log(config,'config')
-				axios(config)
-						.then(function (response) {
-							console.log(JSON.stringify(response.data));
-						})
-						.catch(function (error) {
-							console.log(error);
-						});
 			},
 			goBack() {
 				// Navigate to the previous page or a specific route
@@ -308,6 +312,7 @@
 					return;
 				}
 				try {
+          this.showNotificationMsg('primary-btn',`Connecting to wasabi server`)
 					// Configure the S3 client
 					const s3 = new S3Client({
 						region: 'us-east-1',
@@ -320,6 +325,8 @@
 					let params = await wasabi(this.id,this.loc)
           console.log(params,'params');
           this.progress =0
+          let wasabiIds = []
+
 					// Upload images
 					const uploads = this.thumbnails.map(async (thumbnail, index) => {
 						// Get the original file name without the extension
@@ -375,62 +382,79 @@
 							new PutObjectCommand(thumbnailParams),
 						];
 
-            let wasabiIds = []
-
             for (const command of putObjectCommands) {
               await s3.send(command);
-
-              let imgNo = parseInt(thumbnail.file.name.match(/\d+/g).pop());
-              // /movies/functions/123933/csi-sanatan-pre-release-press-meet/image1
-              let url=  JSON.stringify(this.nurl+`/image${imgNo?imgNo:1}`);
-              // http://imgcdn.ragalahari.com/mar2023/functions/csi-sanatan-pre-release-meet/csi-sanatan-pre-release-meet1.jpg
-              let image = 'http://' + params.Bucket + '/' + params.imagePath + '/' + thumbnail.file.name
-
-
-              const response = await axios.get(`/items/wasabi?filter={"url":${url}}`);
-              let res = response.data.data[0]
-              if(res.length === 0){
-                // insert
-                axios({
-                  method: 'post',
-                  url: '/items/wasabi',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer '+this.bearer,
-                  },
-                  data: {
-                    url:url,
-                    image: JSON.stringify(image),
-                  }
-                })
-                    .then(response => {
-                      console.log(response.data,'resp from insert');
-                    })
-                    .catch(error => {
-                      console.error(error);
-                    });
-
-              }else{
-                //fetch
-                wasabiIds.push(res.id)
-              }
-
-              this.progress=((index+1)/total)*100
+              this.showNotificationMsg('primary-btn',`Uploading: ${index+1}/${total} =>  ${fileNameWithoutExtension}`)
             }
 
+            let imgNo = parseInt(thumbnail.file.name.match(/\d+/g).pop());
+            // /movies/functions/123933/csi-sanatan-pre-release-press-meet/image1
+            let url=  this.nurl+`/image${imgNo?imgNo:1}`;
+            // http://imgcdn.ragalahari.com/mar2023/functions/csi-sanatan-pre-release-meet/csi-sanatan-pre-release-meet1.jpg
+            let image =  params.imagePath + thumbnail.file.name
+
+
+            const response = await axios.get(`/items/wasabi?filter={"url":"${url}"}`);
+            let res = response.data.data
+            console.log(res);
+            if(res.length === 0){
+
+              console.log('inserted',url,image);
+              // insert
+              await axios({
+                method: 'post',
+                url: '/items/wasabi',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer '+this.bearer,
+                },
+                data: {
+                  url:url,
+                  image: image,
+                }
+              })
+                  .then(async response => {
+                    let lastId = await axios.get(`/items/wasabi?limit=1&sort=-id`);
+                    lastId = lastId.data.data[0].id
+                    wasabiIds.push(lastId)
+                    console.log(response.data, lastId, 'resp from insert');
+                  })
+                  .catch(error => {
+                    console.error(error);
+                  });
+
+            }else{
+              console.log('fetched');
+              //fetch
+              wasabiIds.push(res[0].id)
+            }
 						// await Promise.all(putObjectCommands.map((command) => s3.send(command)));
+            console.log(index,total,index+1);
+            this.progress=((index+1)/total)*100
 					});
           await Promise.all(uploads);
+          // wasabiIds = [...new Set(wasabiIds)];
+          wasabiIds = wasabiIds.filter((id, index) => wasabiIds.indexOf(id) === index);
+
+          console.log(wasabiIds);
+          const response = await axios.get(`/items/${this.loc}?filter={"rid":${this.id}}&fields=wasabi`);
+          let obj = JSON.parse(response.data.data[0].wasabi)
+
+            // let updatedIds = [...new Set([...obj, ...wasabiIds])];
+          let updatedIds = obj.concat(wasabiIds.filter(id => !obj.includes(id)));
+
+          await this.updateWasabiOrder(updatedIds)
+
+          this.showNotificationMsg('success-btn','Images and thumbnails uploaded successfully!')
           // Reset file input element
           const fileInput = document.getElementById('file-input');
           fileInput.value = '';
           this.thumbnails = [];
-          this.showNotificationMsg('success','Images and thumbnails uploaded successfully!')
-
-
+          this.progress=100
 				} catch (error) {
 					console.error('Error uploading images:', error);
-          this.showNotificationMsg('danger','Failed to upload images. Please try again.',)
+          //refetch image
+          this.showNotificationMsg('danger-btn','Failed to upload images. Please try again.',)
 
 				}
 			},
@@ -438,7 +462,6 @@
         this.showNotification = true;
         this.notificationMessage = message;
         this.notificationType = type;
-
         setTimeout(() => {
           this.hideNotification();
         }, 3000);
@@ -578,13 +601,17 @@
     padding: 10px;
     border-radius: 4px;
     font-weight: bold;
+    z-index:99
   }
-
-  .success {
-    background-color: #3788d8;
+  .primary-btn {
+    background-color: #000000;
     color: #fff;
   }
-  .danger {
+  .success-btn {
+    background-color: #009f29;
+    color: #fff;
+  }
+  .danger-btn {
     background-color: #d83737;
     color: #fff;
   }
