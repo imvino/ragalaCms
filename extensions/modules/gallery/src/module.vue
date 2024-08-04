@@ -34,7 +34,7 @@
 						class="thumbnail-container"
 						@click="removeImage(index)"
 				>
-					<img :src="thumbnail.url" class="thumbnail" />
+					<img :src="getProxiedUrl(fixImage(thumbnail.url))" class="thumbnail" />
 					<div class="thumbnail-remove">Remove</div>
 				</div>
 			</div>
@@ -51,7 +51,7 @@
 							@dragover.prevent
 							@drop="onDrop"
 					>
-						<img :src="image.image.replace('.jpg', 't.jpg')" />
+						<img :src="getProxiedUrl(fixImage(image.image.replace('.jpg', 't.jpg')))" />
 					</div>
 
 				</div>
@@ -163,6 +163,27 @@
       },
 		},
 		methods: {
+			getProxiedUrl(url) {
+				const proxyBaseUrl = 'https://cinemaharshi.com/api/proxy?url=';
+
+				if (url.includes('ragalahari.com')) {
+					return `${proxyBaseUrl}${encodeURIComponent(url)}`;
+				} else {
+					return url;
+				}
+			},
+			fixImage(url) {
+				let fixedUrl = url
+						.replace('imgcdn.ragalahari.com', 'img.ragalahari.com')
+						.replace('szcdn.ragalahari.com', 'starzone.ragalahari.com')
+						.replace('szcdn1.ragalahari.com', 'starzone.ragalahari.com')
+						.replace('d3r5d8p7.ragalahari.com', 'media.ragalahari.com');
+
+				// Fix any double slashes in the path (except the ones after 'http(s):')
+				fixedUrl = fixedUrl.replace(/([^:])\/\//g, '$1/');
+
+				return fixedUrl;
+			},
 			async fetchImages() {
 				if (this.id) {
 					try {
